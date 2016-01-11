@@ -15,10 +15,7 @@ import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.apache.commons.net.ntp.TimeStamp;
-import org.eventreducer.Event;
-import org.eventreducer.Journal;
-import org.eventreducer.Serializable;
-import org.eventreducer.Serializer;
+import org.eventreducer.*;
 import org.eventreducer.hlc.PhysicalTimeProvider;
 import org.redisson.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
@@ -27,6 +24,7 @@ import org.redisson.core.RMap;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.StreamSupport;
 
 public class RedisJournal extends Journal {
 
@@ -57,6 +55,17 @@ public class RedisJournal extends Journal {
         };
 
         storage = client.getMap(prefix + "_eventreducer_journal", jsonJacksonCodec);
+    }
+
+    @Override
+    public void prepareIndices(IndexFactory indexFactory) {
+        StreamSupport.stream(storage.values().spliterator(), true).forEach(event -> {
+            try {
+                event.entitySerializer().index(indexFactory, event);
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            }
+        });
+
     }
 
     public static abstract class SerializableMixin {
