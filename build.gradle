@@ -1,0 +1,18 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+repositories {
+    jcenter()
+    maven {
+        url  "http://dl.bintray.com/eventreducer/org.eventreducer"
+    }
+
+}
+
+dependencies {
+    compile project(':eventreducer')
+
+    compile 'org.redisson:redisson:2.2.5'
+
+    testCompile "junit:junit:4.11"
+}
