@@ -1,3 +1,5 @@
 include 'eventreducer'
+include 'eventreducer:hlc'
+include 'eventreducer-json'
 
 rootProject.name = 'eventreducer-redis'

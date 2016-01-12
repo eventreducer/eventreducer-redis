@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     compile project(':eventreducer')
+    compile project(':eventreducer-json')
 
     compile 'org.redisson:redisson:2.2.5'
 
