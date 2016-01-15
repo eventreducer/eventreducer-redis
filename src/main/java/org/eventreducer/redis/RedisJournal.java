@@ -1,6 +1,7 @@
 package org.eventreducer.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.eventreducer.Command;
 import org.eventreducer.Event;
 import org.eventreducer.IndexFactory;
 import org.eventreducer.Journal;
@@ -19,6 +20,7 @@ public class RedisJournal extends Journal {
 
     private final RedissonClient client;
     private final RMap<UUID, Event> storage;
+    private final RMap<UUID, Command> commands;
 
     public RedisJournal(PhysicalTimeProvider physicalTimeProvider, RedissonClient client, String prefix) {
         super(physicalTimeProvider);
@@ -35,6 +37,7 @@ public class RedisJournal extends Journal {
         };
 
         storage = client.getMap(prefix + "_eventreducer_journal", jsonJacksonCodec);
+        commands = client.getMap(prefix + "_eventreducer_commands", jsonJacksonCodec);
     }
 
     @Override
@@ -50,7 +53,8 @@ public class RedisJournal extends Journal {
 
 
     @Override
-    protected void journal(List<Event> events) {
+    protected void journal(Command command, List<Event> events) {
+        commands.put(command.uuid(), command);
         events.stream().
                 forEachOrdered(event -> storage.put(event.uuid(), event));
     }
