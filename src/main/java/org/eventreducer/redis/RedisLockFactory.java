@@ -37,7 +37,7 @@ public class RedisLockFactory extends LockFactory {
         @Override
         public void unlock() {
             semaphore.release();
-            semaphore.deleteAsync();
+            semaphore.delete();
         }
 
     }
