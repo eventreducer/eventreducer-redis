@@ -4,9 +4,10 @@ import lombok.SneakyThrows;
 import org.eventreducer.Lock;
 import org.eventreducer.LockFactory;
 import org.redisson.RedissonClient;
-import org.redisson.core.RSemaphore;
+import org.redisson.core.RLock;
 
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class RedisLockFactory extends LockFactory {
 
@@ -21,23 +22,32 @@ public class RedisLockFactory extends LockFactory {
     @Override
     @SneakyThrows
     public org.eventreducer.Lock lock(Object lock) {
-        RSemaphore semaphore = client.getSemaphore(this.prefix + "_" + lock.toString() + "_eventreducer_semaphore");
-        semaphore.setPermits(1);
-        semaphore.acquire();
-        return new MemoryLock(semaphore);
+        RLock l = client.getLock(this.prefix + "_" + lock.toString() + "_eventreducer_lock");
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        CompletableFuture<Void> future1 = new CompletableFuture<>();
+        new Thread(() -> {
+            l.lock();
+            future1.complete(null);
+            try {
+                future.get();
+            } catch (InterruptedException | ExecutionException e) {
+            }
+            l.unlock();
+        }).start();
+        future1.get();
+        return new MemoryLock(future);
     }
 
     static class MemoryLock implements Lock {
-        private final RSemaphore semaphore;
+        private final CompletableFuture<Void> future;
 
-        public MemoryLock(RSemaphore semaphore) {
-            this.semaphore = semaphore;
+        public MemoryLock(CompletableFuture<Void> future) {
+            this.future = future;
         }
 
         @Override
         public void unlock() {
-            semaphore.release();
-            semaphore.delete();
+            future.complete(null);
         }
 
     }
