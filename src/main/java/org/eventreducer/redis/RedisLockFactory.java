@@ -35,19 +35,26 @@ public class RedisLockFactory extends LockFactory {
             l.unlock();
         }).start();
         future1.get();
-        return new MemoryLock(future);
+        return new MemoryLock(future, l);
     }
 
     static class MemoryLock implements Lock {
         private final CompletableFuture<Void> future;
+        private final RLock lock;
 
-        public MemoryLock(CompletableFuture<Void> future) {
+        public MemoryLock(CompletableFuture<Void> future, RLock l) {
             this.future = future;
+            lock = l;
         }
 
         @Override
         public void unlock() {
             future.complete(null);
+        }
+
+        @Override
+        public boolean isLocked() {
+            return lock.isLocked();
         }
 
     }
