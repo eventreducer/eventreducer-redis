@@ -11,7 +11,9 @@ import org.redisson.RedissonClient;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.core.RMap;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
@@ -41,14 +43,30 @@ public class RedisJournal extends Journal {
     }
 
     @Override
-    public void prepareIndices(IndexFactory indexFactory) {
-        StreamSupport.stream(storage.values().spliterator(), true).forEach(event -> {
-            try {
-                event.entitySerializer().index(indexFactory, event);
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            }
-        });
+    public Optional<Event> findEvent(UUID uuid) {
+        if (storage.containsKey(uuid)) {
+            return Optional.of(storage.get(uuid));
+        }
+        return Optional.empty();
+    }
 
+    @Override
+    public Optional<Command> findCommand(UUID uuid) {
+        if (commands.containsKey(uuid)) {
+            return Optional.of(commands.get(uuid));
+        }
+        return Optional.empty();
+    }
+
+
+    @Override
+    public Iterator<Event> eventIterator(Class<? extends Event> klass) {
+        return storage.values().stream().filter(v -> klass.isAssignableFrom(v.getClass())).iterator();
+    }
+
+    @Override
+    public Iterator<Command> commandIterator(Class<? extends Command> klass) {
+        return commands.values().stream().filter(v -> klass.isAssignableFrom(v.getClass())).iterator();
     }
 
 
