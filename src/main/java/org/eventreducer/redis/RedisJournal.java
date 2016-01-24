@@ -1,10 +1,7 @@
 package org.eventreducer.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.eventreducer.Command;
-import org.eventreducer.Event;
-import org.eventreducer.IndexFactory;
-import org.eventreducer.Journal;
+import org.eventreducer.*;
 import org.eventreducer.hlc.PhysicalTimeProvider;
 import org.eventreducer.json.EventReducerModule;
 import org.redisson.RedissonClient;
@@ -15,7 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.StreamSupport;
+import java.util.stream.Collectors;
 
 public class RedisJournal extends Journal {
 
@@ -78,8 +75,9 @@ public class RedisJournal extends Journal {
     }
 
     @Override
-    public long size() {
-        return storage.size();
+    public long size(Class<? extends Identifiable> klass) {
+        return storage.values().stream().filter(e -> klass.isAssignableFrom(e.getClass())).collect(Collectors.toList()).size() +
+                commands.values().stream().filter(e -> klass.isAssignableFrom(e.getClass())).collect(Collectors.toList()).size();
     }
 
 }
