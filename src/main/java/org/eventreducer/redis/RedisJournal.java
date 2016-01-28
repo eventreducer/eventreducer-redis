@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RedisJournal extends Journal {
 
@@ -68,16 +69,21 @@ public class RedisJournal extends Journal {
 
 
     @Override
-    protected void journal(Command command, List<Event> events) {
+    protected long journal(Command command, Stream<Event> events) {
         commands.put(command.uuid(), command);
-        events.stream().
-                forEachOrdered(event -> storage.put(event.uuid(), event));
+        return events.map(event -> storage.put(event.uuid(), event)).count();
     }
+
 
     @Override
     public long size(Class<? extends Identifiable> klass) {
         return storage.values().stream().filter(e -> klass.isAssignableFrom(e.getClass())).collect(Collectors.toList()).size() +
                 commands.values().stream().filter(e -> klass.isAssignableFrom(e.getClass())).collect(Collectors.toList()).size();
+    }
+
+    @Override
+    public Stream<Event> events(Command command) {
+        return storage.values().stream().filter(e -> e.command().uuid().equals(command.uuid()));
     }
 
 }
